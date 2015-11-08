@@ -6,6 +6,7 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_io.hpp>
 
+#include "json/json.h"
 
 #include "l2l.hpp"
 
@@ -49,8 +50,19 @@ int main(int argc, char** argv)
     boost::uuids::uuid u; // initialize uuid
     id = "l2l-cpp-server-" + to_string(u);
   }
+  
+  auto echoService = l2l::Service{
+    "echo",
+    [](Json::Value msg, std::shared_ptr<l2l::L2lServer> server) {
+      Json::Value answer;
+      answer["data"] = msg["data"];
+      server->answer(msg, answer);
+    }
+  };
 
-  l2l::startServer(host, port, id);
+  std::vector<l2l::Service> services{echoService};
+
+  auto server = l2l::startServer(host, port, id, services);
 
   return 1;
 }
