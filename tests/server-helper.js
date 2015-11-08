@@ -5,7 +5,7 @@ var lang = require("lively.lang");
 var uuid = require('node-uuid');
 
 var defaultOpts = {
-  binDir: process.cwd() + "/build",
+  binDir: process.cwd() + "/build/examples",
   port: 10301,
   host: "0.0.0.0"
 }
@@ -15,7 +15,7 @@ function start(opts, thenDo) {
 
   if (!opts.id) opts.id = "cpp-server-" + uuid.v4();
   var args = ["--port", opts.port, "--host", opts.host, "--id", opts.id],
-      proc = spawn("./l2l-cpp", args, {cwd: opts.binDir}),
+      proc = spawn("./l2l-cpp-commandline", args, {cwd: opts.binDir}),
       server = {process: proc, id: opts.id},
       startErr;
 

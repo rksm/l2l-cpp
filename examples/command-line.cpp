@@ -64,5 +64,5 @@ int main(int argc, char** argv)
 
   auto server = l2l::startServer(host, port, id, services);
 
-  return 1;
+  return 0;
 }

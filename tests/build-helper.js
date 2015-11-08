@@ -6,7 +6,7 @@ var lang = require("lively.lang");
 var defaultOpts = {
   cwd: process.cwd() + "/build",
   steps: [
-    {cmd: "cmake", args: ["-DCMAKE_BUILD_TYPE=RELEASE", "-DCMAKE_EXPORT_COMPILE_COMMANDS=1", ".."]},
+    {cmd: "cmake", args: ["-DBUILD_EXAMPLES=1", "-DCMAKE_EXPORT_COMPILE_COMMANDS=1", ".."]},
     {cmd: "make", args: []}
   ]
 }

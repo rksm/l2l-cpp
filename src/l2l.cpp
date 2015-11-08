@@ -233,7 +233,7 @@ void forward(L2lServer *server, ServerState *state, WeakConnectionHandle h, stri
 void handleMessage(L2lServer *server, ServerState *state, WeakConnectionHandle h, Value msg)
 {
   string action = msg.get("action", "no-action-defined-").asString();
-  
+
   auto serviceIt = state->services.find(action);
   if (serviceIt != state->services.end())
   {
