@@ -2,6 +2,7 @@
 
 var spawn = require("child_process").spawn;
 var lang = require("lively.lang");
+var uuid = require('node-uuid');
 
 var defaultOpts = {
   binDir: process.cwd() + "/build",
@@ -11,22 +12,18 @@ var defaultOpts = {
 
 function start(opts, thenDo) {
   opts = lang.obj.merge(defaultOpts, opts);
-  var x = spawn(
-        "pwd", [],
-        {cwd: opts.binDir});
-  x.stdout.on("data", d => console.log(String(d)));
 
-  var proc = spawn(
-        "./l2l-cpp",
-        ["--port", opts.port, "--host", opts.host],
-        {cwd: opts.binDir}),
-      server = {process: proc};
-  var startErr;
+  if (!opts.id) opts.id = "cpp-server-" + uuid.v4();
+  var args = ["--port", opts.port, "--host", opts.host, "--id", opts.id],
+      proc = spawn("./l2l-cpp", args, {cwd: opts.binDir}),
+      server = {process: proc, id: opts.id},
+      startErr;
+
   function errH(err) { startErr = err; }
   proc.once("error", errH);
   proc.stdout.on("data", d => console.log(String(d)));
   proc.stderr.on("data", d => console.log(String(d)));
-  proc.on("exit", () => console.log("server closed"));
+  // proc.on("exit", () => console.log("server closed"));
   setTimeout(() => {
     proc.removeListener("error", errH);
     thenDo && thenDo(startErr, server);

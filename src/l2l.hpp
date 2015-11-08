@@ -4,7 +4,9 @@
 namespace l2l
 {
   
-void startServer(int port);
+#include <string>
+
+void startServer(std::string host, int port, std::string id);
 
 }
 

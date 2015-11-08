@@ -3,6 +3,10 @@
 
 #include "boost/program_options.hpp"
 
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_io.hpp>
+
+
 #include "l2l.hpp"
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -11,13 +15,15 @@ int main(int argc, char** argv)
 {
   int port;
   std::string host;
+  std::string id = "";
 
   namespace po = boost::program_options;
   po::options_description desc("Options");
   desc.add_options()
     ("help", "Print help messages")
     ("port,p", po::value<int>(&port)->required(), "port")
-    ("host,p", po::value<std::string>(&host)->required(), "hostname");
+    ("host,p", po::value<std::string>(&host)->required(), "hostname")
+    ("id", po::value<std::string>(&id), "id");
 
   po::variables_map vm;
   try
@@ -39,7 +45,12 @@ int main(int argc, char** argv)
     return 1;
   }
 
-  l2l::startServer(port);
+  if (id == "") {
+    boost::uuids::uuid u; // initialize uuid
+    id = "l2l-cpp-server-" + to_string(u);
+  }
+
+  l2l::startServer(host, port, id);
 
   return 1;
 }
