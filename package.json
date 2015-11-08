@@ -7,12 +7,12 @@
   "author": "Robert Krahn",
   "license": "MIT",
   "dependencies": {
-    "lively.lang": "^0.4.12",
-    "node-uuid": "^1.4.3",
-    "temp": "^0.8.3",
-    "websocket": "^1.0.22",
     "chai": "^3.3.0",
     "chai-subset": "^1.1.0",
-    "mocha": "^2.3.3"
+    "lively.lang": "^0.4.12",
+    "mocha": "^2.3.3",
+    "node-uuid": "^1.4.3",
+    "temp": "^0.8.3",
+    "websocket": "^1.0.22"
   }
 }
