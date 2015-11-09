@@ -79,6 +79,7 @@ void handleMessage(L2lServer*, ServerState*, WeakConnectionHandle, Value);
 void handleParseError(L2lServer*, ServerState*, WeakConnectionHandle, Value);
 void forward(L2lServer*, ServerState*, WeakConnectionHandle, string, Value, WsServer::message_ptr);
 void sendMsgWithConnection(L2lServer*, ServerState*, WeakConnectionHandle, Value);
+void sendBinaryWithConnection(L2lServer*, ServerState*, WeakConnectionHandle, const void*,size_t);
 Value parseMessageString(const string&);
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -115,21 +116,41 @@ void L2lServer::addService(ServiceP s)
   _state->services[s->name] = s;
 }
 
+void L2lServer::send(Value msg)
+{
+  string target = msg.get("target", "").asString();
+  if (target == "") {
+    std::cout << "Send: Cannot find target of msg " << msg << std::endl;
+    return;
+  }
+
+  msg["sender"] = _id;
+
+  auto targetHandleIt = _state->registeredConnections.find(target);
+  if (targetHandleIt != _state->registeredConnections.end())
+    sendMsgWithConnection(this, _state, targetHandleIt->second, msg);
+  else
+    std::cout << "Error answering " << msg.get("action", "???").asString()
+              << ": cannot find connection handle!" << std::endl;
+}
+
+void L2lServer::sendBinary(string target, const void* data, size_t length)
+{
+  auto targetHandleIt = _state->registeredConnections.find(target);
+  if (targetHandleIt != _state->registeredConnections.end())
+    sendBinaryWithConnection(this, _state, targetHandleIt->second, data, length);
+  else
+    std::cout << "Error sending binary data, cannot find connection handle for "
+              << target << std::endl;
+}
+
 void L2lServer::answer(Value msg, Value answer)
 {
   string action = msg.get("action", "").asString();
   string target = msg.get("sender", "").asString();
   answer["action"] = action + "Response";
-  answer["sender"] = _id;
   answer["target"] = target;
-
-  auto targetHandleIt = _state->registeredConnections.find(target);
-
-  if (targetHandleIt != _state->registeredConnections.end())
-    sendMsgWithConnection(this, _state, targetHandleIt->second, answer);
-  else
-    std::cout << "Error answering " << msg.get("action", "???").asString()
-              << ": cannot find connection handle!" << std::endl;
+  send(answer);
 }
 
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -206,6 +227,21 @@ Value parseMessageString(const string &mString)
   error["message"] = "parse error: " + reader.getFormattedErrorMessages();
   return error;
 
+}
+
+void sendBinaryWithConnection(
+  L2lServer *server,
+  ServerState *state,
+  WeakConnectionHandle h,
+  const void* data,
+  size_t length)
+{
+  try {
+  	state->wsServer.send(h, data, length, websocketpp::frame::opcode::binary);
+  } catch (const websocketpp::lib::error_code& e) {
+    std::cout << "Send failed because: " << e
+              << "(" << e.message() << ")" << std::endl;
+  }
 }
 
 void sendStringWithConnection(L2lServer *server, ServerState *state, WeakConnectionHandle h, string data)

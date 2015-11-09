@@ -57,6 +57,8 @@ class L2lServer : public std::enable_shared_from_this<L2lServer>
     std::string id() { return _id; };
     void run(uint16_t port);
     void addService(ServiceP s);
+    void send(Json::Value msg);
+    void sendBinary(std::string target, const void* data, size_t length);
     void answer(Json::Value msg, Json::Value answer);
 
   private:

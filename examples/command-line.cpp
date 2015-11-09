@@ -1,5 +1,7 @@
 #include <iostream>
 #include <string>
+#include <chrono>
+#include <thread>
 
 #include "boost/program_options.hpp"
 
@@ -58,7 +60,32 @@ int main(int argc, char** argv)
       server->answer(msg, answer);
     });
 
-  l2l::Services services{echoService};
+  auto delayedService = l2l::createLambdaService("delayed-send",
+    [](Json::Value msg, std::shared_ptr<l2l::L2lServer> server) {
+      auto payload = msg["data"]["payload"];
+      auto target = msg["data"].get("target", "").asString();
+      auto action = msg["data"].get("action", "").asString();
+      auto delay = msg["data"].get("delay", 0).asInt();
+
+      std::this_thread::sleep_for(std::chrono::milliseconds(delay));
+
+      Json::Value delayedMsg;
+      delayedMsg["action"] = action;
+      delayedMsg["target"] = target;
+      delayedMsg["data"] = payload;
+      server->send(delayedMsg);
+    });
+
+  auto binaryService = l2l::createLambdaService("binary",
+    [](Json::Value msg, std::shared_ptr<l2l::L2lServer> server) {
+      auto target = msg.get("sender", "").asString();
+      char data[10];
+    	for (int i = 0; i<10; i++) data[i] = 65+i;
+    	int length = sizeof(data);
+      server->sendBinary(target, data, length);
+    });
+
+  l2l::Services services{echoService, delayedService, binaryService};
 
   auto server = l2l::startServer(host, port, id, services);
 

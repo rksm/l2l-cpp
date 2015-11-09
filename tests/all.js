@@ -86,6 +86,40 @@ describe('3 clients, 1 server --', function() {
     )(done);
   });
 
+  it("server initialized send", done => {
+    var msg = {action: "delayed-send", data: {action: "foo", payload: {testData: 123}, target: clients[1].id, delay: 400}, sender: clients[0].id};
+    lang.fun.composeAsync(
+      n => clients[0].connection.sendUTF(JSON.stringify(msg), n),
+      n => setTimeout(n, 100),
+      n => {
+        expect(receivedMessages[clients[0].id]).to.have.length(0);
+        expect(receivedMessages[clients[1].id]).to.have.length(0);
+        expect(receivedMessages[clients[2].id]).to.have.length(0);
+        clients[1].once("message", m => n(null, m));
+      },
+      (_, n) => {
+        expect(receivedMessages[clients[1].id]).to.deep.equal([{target: clients[1].id, sender: server.id, action: "foo", data: {testData: 123}}]);
+        expect(receivedMessages[clients[0].id]).to.have.length(0);
+        expect(receivedMessages[clients[2].id]).to.have.length(0);
+        n();
+      }
+    )(done);
+  });
+
+  it("server sends binary", done => {
+    var msg = {action: "binary", data: {}, sender: clients[0].id};
+    lang.fun.composeAsync(
+      n => clients[0].connection.sendUTF(JSON.stringify(msg), n),
+      n => clients[0].once("message", m => n(null, m)),
+      (m, n) => {
+        expect(m.type).to.equal("binary");
+        expect(m.binaryData).to.have.length(10);
+        expect(String(m.binaryData)).to.equal("ABCDEFGHIJ");
+        n();
+      }
+    )(done);
+  });
+
   // it("broadcasts", done => {
   //   lang.fun.composeAsync(
   //     n => clients[0].connection.sendUTF(JSON.stringify({action: "broadcast", data: {foo: "bar"}}), n),
