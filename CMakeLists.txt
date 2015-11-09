@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1.0 FATAL_ERROR)
-project (l2l-cpp)
+project (L2L-CPP)
 
 # caching
 find_program(CCACHE_FOUND ccache) 
@@ -11,8 +11,21 @@ endif(CCACHE_FOUND)
 
 option (BUILD_EXAMPLES "Build websocketpp examples." FALSE)
 
+set (L2L-CPP_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
+set (L2L-CPP_INCLUDE ${L2L-CPP_ROOT}/src)
+set (L2L-CPP_BUILD_ROOT ${CMAKE_CURRENT_BINARY_DIR})
+set (L2L-CPP_BIN ${L2L-CPP_BUILD_ROOT}/bin)
+set (L2L-CPP_LIB ${L2L-CPP_BUILD_ROOT}/lib)
+
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
 if (BUILD_EXAMPLES)
   add_subdirectory(examples)
 endif()
 
 add_subdirectory(src)
+
+install(DIRECTORY src/ DESTINATION include
+        FILES_MATCHING PATTERN "*.hpp")
