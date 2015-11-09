@@ -30,19 +30,45 @@ typedef map <string, WeakConnectionHandle> RegisteredConnections;
 namespace l2l
 {
 
-std::shared_ptr<L2lServer> startServer(string host, int port, string id, vector<Service> services = vector<Service>()) {
+bool debug = false;
+
+void Service::handler(Json::Value msg, std::shared_ptr<L2lServer> server)
+{
+  std::cout << "empty service handler" << std::endl; 
+}
+
+LambdaService::LambdaService()
+  : Service(),
+    handlerFunc([](Json::Value, std::shared_ptr<L2lServer>) { std::cout << "empty lambda service handler" << std::endl; })
+{}
+
+void LambdaService::handler(Json::Value msg, std::shared_ptr<L2lServer> server)
+{
+  handlerFunc(msg, server);
+}
+
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
+std::shared_ptr<L2lServer> startServer(
+  string host,
+  int port,
+  string id,
+  Services services = Services())
+{
   std::shared_ptr<L2lServer> server(new L2lServer(id));
-  for (auto s : services) server->addService(s);
+  for (ServiceP s : services) server->addService(s);
   server->run(port);
   return server;
 }
+
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 struct ServerState
 {
   WsServer wsServer;
   Connections connections;
   RegisteredConnections registeredConnections;
-  Services services;
+  ServiceMap services;
 };
 
 void on_open(L2lServer*, ServerState*, WeakConnectionHandle);
@@ -54,6 +80,8 @@ void handleParseError(L2lServer*, ServerState*, WeakConnectionHandle, Value);
 void forward(L2lServer*, ServerState*, WeakConnectionHandle, string, Value, WsServer::message_ptr);
 void sendMsgWithConnection(L2lServer*, ServerState*, WeakConnectionHandle, Value);
 Value parseMessageString(const string&);
+
+// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 L2lServer::L2lServer(string id): _id(id), _state(new ServerState()) {
   // websocketpp/logger/levels.hpp
@@ -81,9 +109,10 @@ void L2lServer::run(uint16_t port)
   _state->wsServer.run();
 }
 
-void L2lServer::addService(Service s)
+void L2lServer::addService(ServiceP s)
 {
-  _state->services[s.name] = s;
+  if (debug) std::cout << "adding service " << s->name << std::endl;
+  _state->services[s->name] = s;
 }
 
 void L2lServer::answer(Value msg, Value answer)
@@ -108,7 +137,7 @@ void L2lServer::answer(Value msg, Value answer)
 
 void on_open(L2lServer *server, ServerState *state, WeakConnectionHandle h) {
   state->connections.insert(h);
-  // std::cout << "starting " << h.lock() << std::endl;
+  if (debug) std::cout << "starting " << h.lock() << std::endl;
 }
 
 void removeConnection(L2lServer *server, ServerState *state, WeakConnectionHandle h) {
@@ -121,7 +150,7 @@ void removeConnection(L2lServer *server, ServerState *state, WeakConnectionHandl
     id = it.first;
     break;
   }
-  std::cout << "removing handle " << h.lock() << "with id " << id << std::endl;
+  if (debug) std::cout << "removing handle " << h.lock() << "with id " << id << std::endl;
   state->registeredConnections.erase(id);
   state->connections.erase(h);
 }
@@ -169,7 +198,7 @@ Value parseMessageString(const string &mString)
   Value json;
   Json::Reader reader;
 
-  // std::cout << "got " << mString << std::endl;
+  if (debug) std::cout << "got " << mString << std::endl;
   if (reader.parse(mString, json)) return json;
 
   Value error;
@@ -237,13 +266,11 @@ void handleMessage(L2lServer *server, ServerState *state, WeakConnectionHandle h
   auto serviceIt = state->services.find(action);
   if (serviceIt != state->services.end())
   {
+    if (debug) std::cout << "found service for " << action << std::endl;
     try {
-      serviceIt->second.handler(msg, server->shared_from_this());
-      return;
-    } catch (const websocketpp::lib::error_code& e) {
-      std::cout << "Service error: " << e
-                << "(" << e.message() << ")" << std::endl;
-      
+      serviceIt->second->handler(msg, server->shared_from_this());
+    } catch (const std::exception& e) {
+      std::cout << "Service error: " << "(" << e.what() << ")" << std::endl;
     }
     return;
   }
@@ -254,7 +281,7 @@ void handleMessage(L2lServer *server, ServerState *state, WeakConnectionHandle h
 
   if (action == "register")
   {
-    // std::cout << "registering " << msg.get("sender", "").asString() << std::endl;
+    if (debug) std::cout << "registering " << msg.get("sender", "").asString() << std::endl;
     answer["data"] = "OK";
   }
   else if (action == "list-connections")

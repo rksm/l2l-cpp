@@ -5,7 +5,7 @@ var lang = require("lively.lang");
 var uuid = require('node-uuid');
 
 var defaultOpts = {
-  binDir: process.cwd() + "/build/examples",
+  binDir: process.cwd() + "/build/bin",
   port: 10301,
   host: "0.0.0.0"
 }

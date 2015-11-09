@@ -12,14 +12,39 @@ namespace l2l
 
 class L2lServer;
 
-struct Service {
+struct Service
+{
   std::string name;
-  void (*handler)(Json::Value msg, std::shared_ptr<L2lServer>);
+  Service() : name("uninitialized-service") {}
+  Service(std::string n) : name(n) {}
+  virtual void handler(Json::Value msg, std::shared_ptr<L2lServer>);
 };
 
-typedef std::map<std::string, Service> Services;
+typedef void (*LambdaServiceHandler)(Json::Value msg, std::shared_ptr<L2lServer> server);
 
-std::shared_ptr<L2lServer> startServer(std::string host, int port, std::string id, std::vector<Service> services);
+struct LambdaService : public Service
+{
+  LambdaServiceHandler handlerFunc;
+  LambdaService();
+  LambdaService(std::string n, LambdaServiceHandler h) : Service(n), handlerFunc(h) {}
+  virtual void handler(Json::Value msg, std::shared_ptr<L2lServer>);
+};
+
+typedef std::shared_ptr<Service> ServiceP;
+typedef std::map<std::string, ServiceP> ServiceMap;
+typedef std::vector<ServiceP> Services;
+
+inline ServiceP createLambdaService(std::string name, LambdaServiceHandler h)
+{
+  ServiceP s(new LambdaService(name, h));
+  return s;
+}
+
+std::shared_ptr<L2lServer> startServer(
+  std::string host,
+  int port,
+  std::string id,
+  Services services);
 
 class ServerState;
 
@@ -31,7 +56,7 @@ class L2lServer : public std::enable_shared_from_this<L2lServer>
     ~L2lServer();
     std::string id() { return _id; };
     void run(uint16_t port);
-    void addService(Service s);
+    void addService(ServiceP s);
     void answer(Json::Value msg, Json::Value answer);
 
   private:

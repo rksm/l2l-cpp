@@ -1,10 +1,14 @@
 cmake_minimum_required(VERSION 3.1.0 FATAL_ERROR)
 
 # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-# websocketpp
+find_package (Jsoncpp REQUIRED)
+
+# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 include(ExternalProject)
 
-set(websocketpp_CMAKE_ARGS "-DCMAKE_INSTALL_PREFIX=${websocketpp_INSTALL_DIR} -DENABLE_CPP11=1")
+set(websocketpp_CMAKE_ARGS
+    "-DCMAKE_INSTALL_PREFIX=${websocketpp_INSTALL_DIR}
+    -DENABLE_CPP11=1")
 
 EXTERNALPROJECT_ADD(
     websocketpp
@@ -21,13 +25,9 @@ ExternalProject_Get_Property(websocketpp SOURCE_DIR)
 set(websocketpp_SOURCE_DIR "${SOURCE_DIR}")
 
 # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-# jsonpp
-find_package (Jsoncpp REQUIRED)
-find_library(jsoncpp_LIBRARY jsoncpp) # why is this needed?
-
-
 add_library (l2l-cpp "l2l.cpp")
 add_dependencies(l2l-cpp websocketpp)
+
 target_include_directories (l2l-cpp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${websocketpp_SOURCE_DIR})
 target_link_libraries(l2l-cpp ${jsoncpp_LIBRARY})
 
