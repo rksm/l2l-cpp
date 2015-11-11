@@ -322,7 +322,7 @@ void handleMessage(L2lServer *server, ServerState *state, WeakConnectionHandle h
   if (action == "register")
   {
     if (debug) std::cout << "registering " << msg.get("sender", "").asString() << std::endl;
-    answer["data"] = "OK";
+    answer["data"]["server-id"] = server->id();
   }
   else if (action == "list-connections")
   {
