@@ -152,8 +152,10 @@ void L2lServer::answer(Value msg, Value answer)
 {
   string action = msg.get("action", "").asString();
   string target = msg.get("sender", "").asString();
+  string messageId = msg.get("messageId", "").asString();
   answer["action"] = action + "Response";
   answer["target"] = target;
+  if (messageId != "") answer["inResponseTo"] = messageId;
   send(answer);
 }
 
