@@ -339,6 +339,8 @@ void handleMessage(L2lServer *server, ServerState *state, WeakConnectionHandle h
 
   answer["sender"] = server->id();
   if (msg.get("sender", "") != "") answer["target"] = msg["sender"];
+  string messageId = msg.get("messageId", "").asString();
+  if (messageId != "") answer["inResponseTo"] = messageId;
 
   sendMsgWithConnection(server, state, h, answer);
 }
