@@ -34,8 +34,6 @@ typedef map <string, WeakConnectionHandle> RegisteredConnections;
 namespace l2l
 {
 
-bool debug = false;
-
 void Service::handler(Json::Value msg, std::shared_ptr<L2lServer> server)
 {
   std::cout << "empty service handler" << std::endl; 
@@ -164,7 +162,7 @@ void L2lServer::answer(Value msg, Value answer)
 
 void on_open(L2lServer *server, ServerState *state, WeakConnectionHandle h) {
   state->connections.insert(h);
-  if (debug) std::cout << "starting " << h.lock() << std::endl;
+  if (server->debug) std::cout << "starting " << h.lock() << std::endl;
 }
 
 void removeConnection(L2lServer *server, ServerState *state, WeakConnectionHandle h) {
@@ -177,7 +175,7 @@ void removeConnection(L2lServer *server, ServerState *state, WeakConnectionHandl
     id = it.first;
     break;
   }
-  if (debug) std::cout << "removing handle " << h.lock() << "with id " << id << std::endl;
+  if (server->debug) std::cout << "removing handle " << h.lock() << "with id " << id << std::endl;
   state->registeredConnections.erase(id);
   state->connections.erase(h);
 }
@@ -225,7 +223,7 @@ Value parseMessageString(const string &mString)
   Value json;
   Json::Reader reader;
 
-  if (debug) std::cout << "got " << mString << std::endl;
+  // if (debug) std::cout << "got " << mString << std::endl;
   if (reader.parse(mString, json)) return json;
 
   Value error;
@@ -308,7 +306,7 @@ void handleMessage(L2lServer *server, ServerState *state, WeakConnectionHandle h
   auto serviceIt = state->services.find(action);
   if (serviceIt != state->services.end())
   {
-    if (debug) std::cout << "found service for " << action << std::endl;
+    if (server->debug) std::cout << "found service for " << action << std::endl;
     try {
       serviceIt->second->handler(msg, server->shared_from_this());
     } catch (const std::exception& e) {
@@ -323,7 +321,7 @@ void handleMessage(L2lServer *server, ServerState *state, WeakConnectionHandle h
 
   if (action == "register")
   {
-    if (debug) std::cout << "registering " << msg.get("sender", "").asString() << std::endl;
+    if (server->debug) std::cout << "registering " << msg.get("sender", "").asString() << std::endl;
     answer["data"]["server-id"] = server->id();
   }
   else if (action == "list-connections")

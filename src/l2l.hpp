@@ -52,6 +52,7 @@ class L2lServer : public std::enable_shared_from_this<L2lServer>
 {
 
   public:
+    bool debug = false;
     L2lServer(std::string id);
     ~L2lServer();
     std::string id() { return _id; };
