@@ -13,6 +13,10 @@ using std::map;
 
 using Json::Value;
 
+#ifndef _WEBSOCKETPP_CPP11_STL_
+#define _WEBSOCKETPP_CPP11_STL_
+#endif
+
 #include <websocketpp/config/asio_no_tls.hpp>
 #include <websocketpp/server.hpp>
 

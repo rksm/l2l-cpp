@@ -28,7 +28,9 @@ set(websocketpp_SOURCE_DIR "${SOURCE_DIR}")
 add_library (l2l-cpp "l2l.cpp")
 add_dependencies(l2l-cpp websocketpp)
 
-target_include_directories (l2l-cpp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${websocketpp_SOURCE_DIR})
+target_include_directories (l2l-cpp PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${websocketpp_SOURCE_DIR})
 target_link_libraries(l2l-cpp ${jsoncpp_LIBRARY})
 
 target_compile_features(l2l-cpp PRIVATE "cxx_auto_type")
