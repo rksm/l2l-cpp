@@ -4,6 +4,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <system_error>
 
 #include "json/forwards.h"
 
@@ -34,6 +35,8 @@ typedef std::shared_ptr<Service> ServiceP;
 typedef std::map<std::string, ServiceP> ServiceMap;
 typedef std::vector<ServiceP> Services;
 
+typedef std::function< void(std::error_code const &)> TimerHandler;
+
 inline ServiceP createLambdaService(std::string name, LambdaServiceHandler h)
 {
   ServiceP s(new LambdaService(name, h));
@@ -61,6 +64,7 @@ class L2lServer : public std::enable_shared_from_this<L2lServer>
     void send(Json::Value msg);
     void sendBinary(std::string target, const void* data, size_t length);
     void answer(Json::Value msg, Json::Value answer);
+    void setTimer(long duration, TimerHandler callback);
 
   private:
     std::string _id;

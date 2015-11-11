@@ -157,6 +157,12 @@ void L2lServer::answer(Value msg, Value answer)
   send(answer);
 }
 
+
+void L2lServer::setTimer(long duration, TimerHandler callback)
+{
+  _state->wsServer.set_timer(duration, callback);
+}
+
 // -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 // implementation
 
