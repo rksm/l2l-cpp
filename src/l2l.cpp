@@ -135,6 +135,13 @@ void L2lServer::clearUploadedBinaryDataOf(string target)
     _state->uploadedBinaryData[target].clear();
 }
 
+void L2lServer::answer(Value msg, string message)
+{
+  Value answer;
+  answer["data"] = message;
+  answer(msg, answer);
+}
+
 void L2lServer::answer(Value msg, Value answer)
 {
   string action = msg.get("action", "").asString();
