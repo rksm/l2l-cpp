@@ -137,9 +137,9 @@ void L2lServer::clearUploadedBinaryDataOf(string target)
 
 void L2lServer::answer(Value msg, string message)
 {
-  Value answer;
-  answer["data"] = message;
-  answer(msg, answer);
+  Value answerMsg;
+  answerMsg["data"] = message;
+  answer(msg, answerMsg);
 }
 
 void L2lServer::answer(Value msg, Value answer)
