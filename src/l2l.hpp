@@ -2,48 +2,13 @@
 #define L2L_L2L_H_INCLUDE_
 
 #include <string>
-#include <map>
-#include <vector>
-#include <system_error>
-
 #include "json/forwards.h"
+#include "l2l-services.hpp"
 
 namespace l2l
 {
 
-class L2lServer;
-
-struct Service
-{
-  std::string name;
-  Service() : name("uninitialized-service") {}
-  Service(std::string n) : name(n) {}
-  virtual void handler(Json::Value msg, std::shared_ptr<L2lServer>);
-};
-
-typedef void (*LambdaServiceHandler)(Json::Value msg, std::shared_ptr<L2lServer> server);
-
-struct LambdaService : public Service
-{
-  LambdaServiceHandler handlerFunc;
-  LambdaService();
-  LambdaService(std::string n, LambdaServiceHandler h) : Service(n), handlerFunc(h) {}
-  virtual void handler(Json::Value msg, std::shared_ptr<L2lServer>);
-};
-
-typedef std::shared_ptr<Service> ServiceP;
-typedef std::map<std::string, ServiceP> ServiceMap;
-typedef std::vector<ServiceP> Services;
-
-typedef std::function< void(std::error_code const &)> TimerHandler;
-
-inline ServiceP createLambdaService(std::string name, LambdaServiceHandler h)
-{
-  ServiceP s(new LambdaService(name, h));
-  return s;
-}
-
-std::shared_ptr<L2lServer> startServer(
+L2lServerP startServer(
   std::string host,
   int port,
   std::string id,
@@ -63,6 +28,8 @@ class L2lServer : public std::enable_shared_from_this<L2lServer>
     void addService(ServiceP s);
     void send(Json::Value msg);
     void sendBinary(std::string target, const void* data, size_t length);
+    BinaryUploads getUploadedBinaryDataOf(std::string target);
+    void clearUploadedBinaryDataOf(std::string target);
     void answer(Json::Value msg, Json::Value answer);
     void setTimer(long duration, TimerHandler callback);
 

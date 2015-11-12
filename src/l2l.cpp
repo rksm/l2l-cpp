@@ -1,16 +1,10 @@
 #include "l2l.hpp"
-
-#include <string>
-#include <exception>
+#include "json/json.h"
 #include <set>
-#include <map>
 
 using std::vector;
 using std::string;
 using std::map;
-
-#include "json/json.h"
-
 using Json::Value;
 
 #ifndef _WEBSOCKETPP_CPP11_STL_
@@ -34,30 +28,13 @@ typedef map <string, WeakConnectionHandle> RegisteredConnections;
 namespace l2l
 {
 
-void Service::handler(Json::Value msg, std::shared_ptr<L2lServer> server)
-{
-  std::cout << "empty service handler" << std::endl; 
-}
-
-LambdaService::LambdaService()
-  : Service(),
-    handlerFunc([](Json::Value, std::shared_ptr<L2lServer>) { std::cout << "empty lambda service handler" << std::endl; })
-{}
-
-void LambdaService::handler(Json::Value msg, std::shared_ptr<L2lServer> server)
-{
-  handlerFunc(msg, server);
-}
-
-// -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-
-std::shared_ptr<L2lServer> startServer(
+L2lServerP startServer(
   string host,
   int port,
   string id,
   Services services = Services())
 {
-  std::shared_ptr<L2lServer> server(new L2lServer(id));
+  L2lServerP server(new L2lServer(id));
   for (ServiceP s : services) server->addService(s);
   server->run(port);
   return server;
@@ -71,6 +48,7 @@ struct ServerState
   Connections connections;
   RegisteredConnections registeredConnections;
   ServiceMap services;
+  BinaryUploadsMap uploadedBinaryData;
 };
 
 void on_open(L2lServer*, ServerState*, WeakConnectionHandle);
@@ -146,6 +124,17 @@ void L2lServer::sendBinary(string target, const void* data, size_t length)
               << target << std::endl;
 }
 
+BinaryUploads L2lServer::getUploadedBinaryDataOf(string target)
+{
+  return _state->uploadedBinaryData[target];
+}
+
+void L2lServer::clearUploadedBinaryDataOf(string target)
+{
+  if (_state->uploadedBinaryData.count(target) > 0)
+    _state->uploadedBinaryData[target].clear();
+}
+
 void L2lServer::answer(Value msg, Value answer)
 {
   string action = msg.get("action", "").asString();
@@ -171,7 +160,8 @@ void on_open(L2lServer *server, ServerState *state, WeakConnectionHandle h) {
   if (server->debug) std::cout << "starting " << h.lock() << std::endl;
 }
 
-void removeConnection(L2lServer *server, ServerState *state, WeakConnectionHandle h) {
+string idOfConnection(ServerState *state, WeakConnectionHandle &h)
+{
   string id = "";
   for (auto it : state->registeredConnections) {
     WeakConnectionHandle h2 = it.second;
@@ -181,6 +171,11 @@ void removeConnection(L2lServer *server, ServerState *state, WeakConnectionHandl
     id = it.first;
     break;
   }
+  return id;  
+}
+
+void removeConnection(L2lServer *server, ServerState *state, WeakConnectionHandle h) {
+  string id = idOfConnection(state, h);
   if (server->debug) std::cout << "removing handle " << h.lock() << "with id " << id << std::endl;
   state->registeredConnections.erase(id);
   state->connections.erase(h);
@@ -195,6 +190,22 @@ void on_close(L2lServer *server, ServerState *state, WeakConnectionHandle h) {
 
 void on_message(L2lServer *server, ServerState *state, WeakConnectionHandle h, WsServer::message_ptr rawMsg)
 {
+  
+  if (rawMsg->get_opcode() == websocketpp::frame::opcode::BINARY)
+  {
+    string senderId = idOfConnection(state, h);
+    if (senderId == "") {
+      std::cout << "uploading binary data failed, don't know sender!" << std::endl;
+      return;
+    }
+
+    auto payload = rawMsg->get_payload();
+    state->uploadedBinaryData[senderId]
+      .push_back(std::make_shared<BinaryUpload>(BinaryUpload(payload)));
+    if (server->debug) std::cout << "uploading " << payload.size() << " bytes" << std::endl;
+    return;
+  }
+
   // 1. string -> jso
   Value json = parseMessageString(rawMsg->get_payload());
   string sender = json.get("sender", "").asString();

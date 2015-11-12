@@ -12,6 +12,12 @@
 
 #include "l2l.hpp"
 
+void sendLater(Json::Value &msg, l2l::L2lServerP &server)
+{
+  server->send(msg);
+}
+
+
 void startServer(std::string host, int port, std::string id)
 {
   if (id == "") {
@@ -20,38 +26,48 @@ void startServer(std::string host, int port, std::string id)
   }
   
   auto echoService = l2l::createLambdaService("echo",
-    [](Json::Value msg, std::shared_ptr<l2l::L2lServer> server) {
+    [](Json::Value msg, l2l::L2lServerP server) {
       Json::Value answer;
       answer["data"] = msg["data"];
       server->answer(msg, answer);
     });
 
   auto delayedService = l2l::createLambdaService("delayed-send",
-    [](Json::Value msg, std::shared_ptr<l2l::L2lServer> server) {
+    [](Json::Value msg, l2l::L2lServerP server) {
       auto payload = msg["data"]["payload"];
       auto target = msg["data"].get("target", "").asString();
       auto action = msg["data"].get("action", "").asString();
       auto delay = msg["data"].get("delay", 0).asInt();
 
-      std::this_thread::sleep_for(std::chrono::milliseconds(delay));
-
       Json::Value delayedMsg;
       delayedMsg["action"] = action;
       delayedMsg["target"] = target;
       delayedMsg["data"] = payload;
-      server->send(delayedMsg);
+
+      server->setTimer(delay, [server, delayedMsg](const std::error_code &err) {
+        server->send(delayedMsg); });
     });
 
   auto binaryService = l2l::createLambdaService("binary",
-    [](Json::Value msg, std::shared_ptr<l2l::L2lServer> server) {
+    [](Json::Value msg, l2l::L2lServerP server) {
       auto target = msg.get("sender", "").asString();
-      char data[10];
+      unsigned char data[10];
     	for (int i = 0; i<10; i++) data[i] = 65+i;
     	int length = sizeof(data);
       server->sendBinary(target, data, length);
     });
 
-  l2l::Services services{echoService, delayedService, binaryService};
+  auto binaryGetUploadService = l2l::createLambdaService("getUploadedBinaryData",
+    [](Json::Value msg, l2l::L2lServerP server) {
+      auto sender = msg.get("sender", "").asString();
+      Json::Value answer;
+      auto uploaded = server->getUploadedBinaryDataOf(sender);
+      for (int i = 0; i < uploaded.size(); i++)
+        answer["data"]["uploads"][i] = std::string((char*)uploaded[i]->data, uploaded[i]->size);
+      server->answer(msg, answer);
+    });
+
+  l2l::Services services{echoService, delayedService, binaryService, binaryGetUploadService};
 
   auto server = l2l::startServer(host, port, id, services);
 }

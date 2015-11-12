@@ -26,6 +26,7 @@ set(websocketpp_SOURCE_DIR "${SOURCE_DIR}")
 
 # -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 add_library (l2l-cpp "l2l.cpp")
+
 add_dependencies(l2l-cpp websocketpp)
 
 target_include_directories (l2l-cpp PUBLIC

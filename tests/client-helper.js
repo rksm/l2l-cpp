@@ -39,7 +39,7 @@ function start(opts, thenDo) {
     thenDo = lang.fun.once(thenDo);
     ws.once("connect", () => {
       ws.connection.sendUTF(JSON.stringify({sender: ws.id, action: "register"}));
-      ws.once("message", () => thenDo(null, ws));
+      ws.once("message", msg => thenDo(null, ws));
     });
     ws.once('connectFailed', (err) => thenDo(err, ws));
   }

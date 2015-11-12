@@ -44,6 +44,17 @@ describe('3 clients, 1 server --', function() {
       n => serverHelper.stop(server, n)
     )(done));
 
+  it("registers", done => {
+    lang.fun.composeAsync(
+      n => clients[0].connection.sendUTF(JSON.stringify({action: "register", data: "", sender: clients[0].id}), n),
+      n => clients[0].once("message", m => n(null, m)),
+      (m, n) => {
+        expect(m.data).deep.equal({"server-id": server.id});
+        n();
+      }
+    )(done);
+  });
+
   it("echoes", done => {
     var msg = {action: "echo", data: "test 123", sender: clients[0].id};
     lang.fun.composeAsync(
@@ -115,6 +126,20 @@ describe('3 clients, 1 server --', function() {
         expect(m.type).to.equal("binary");
         expect(m.binaryData).to.have.length(10);
         expect(String(m.binaryData)).to.equal("ABCDEFGHIJ");
+        n();
+      }
+    )(done);
+  });
+
+  it.only("client uploads binary", done => {
+    
+    lang.fun.composeAsync(
+      n => clients[0].connection.sendBytes(new Buffer(new Uint8Array("hello".split("").map(c => c.charCodeAt(0)))), n),
+      n => clients[0].connection.sendUTF(JSON.stringify({action: "getUploadedBinaryData", data: {}, sender: clients[0].id}), n),
+      n => clients[0].once("message", m => n(null, m)),
+      (msg, n) => {
+        expect(msg.data).to.have.property("uploads").length(1);
+        expect(msg.data.uploads).to.deep.equal(["hello"]);
         n();
       }
     )(done);
