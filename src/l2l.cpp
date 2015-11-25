@@ -333,8 +333,10 @@ void handleMessage(L2lServer *server, ServerState *state, WeakConnectionHandle h
     if (server->debug) std::cout << "found service for " << action << std::endl;
     try {
       serviceIt->second->handler(msg, server->shared_from_this());
+    } catch (const std::logic_error& e) {
+      std::cout << "Logic error in service (JSON related?)" << action << ":" << e.what() << std::endl;
     } catch (const std::exception& e) {
-      std::cout << "Service error: " << "(" << e.what() << ")" << std::endl;
+      std::cout << "Error in service " << action << ":" << e.what() << std::endl;
     }
     return;
   }
