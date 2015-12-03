@@ -30,8 +30,8 @@ class L2lServer : public std::enable_shared_from_this<L2lServer>
     void sendBinary(std::string target, const void* data, size_t length);
     BinaryUploads getUploadedBinaryDataOf(std::string target);
     void clearUploadedBinaryDataOf(std::string target);
-    void answer(Json::Value msg, std::string);
-    void answer(Json::Value msg, Json::Value answer);
+    void answer(Json::Value msg, std::string, bool expectMoreResponses=false);
+    void answer(Json::Value msg, Json::Value answer, bool expectMoreResponses=false);
     void setTimer(long duration, TimerHandler callback);
 
   private:

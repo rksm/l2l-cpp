@@ -135,14 +135,14 @@ void L2lServer::clearUploadedBinaryDataOf(string target)
     _state->uploadedBinaryData[target].clear();
 }
 
-void L2lServer::answer(Value msg, string message)
+void L2lServer::answer(Value msg, string message, bool expectMoreResponses)
 {
   Value answerMsg;
   answerMsg["data"] = message;
   answer(msg, answerMsg);
 }
 
-void L2lServer::answer(Value msg, Value answer)
+void L2lServer::answer(Value msg, Value answer, bool expectMoreResponses)
 {
   string action = msg.get("action", "").asString();
   string target = msg.get("sender", "").asString();
@@ -150,6 +150,7 @@ void L2lServer::answer(Value msg, Value answer)
   answer["action"] = action + "Response";
   answer["target"] = target;
   if (messageId != "") answer["inResponseTo"] = messageId;
+  if (expectMoreResponses) answer["expectMoreResponses"] = true;
   send(answer);
 }
 
